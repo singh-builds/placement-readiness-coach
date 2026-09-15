@@ -2,8 +2,9 @@ spring:
   application:
     name: placement-readiness-coach
   datasource:
-    # DATABASE_URL is PostgreSQL URL without the JDBC prefix, compatible with Render and Docker.
-    url: jdbc:${DATABASE_URL:postgresql://localhost:5432/placement_coach}
+    # Render's connectionString embeds credentials, which PostgreSQL JDBC does not accept in a URL.
+    # Use Render's discrete connection properties instead.
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:placement_coach}
     username: ${DATABASE_USERNAME:placement_user}
     password: ${DATABASE_PASSWORD:placement_password}
     hikari:

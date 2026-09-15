@@ -6,10 +6,18 @@ services:
     region: singapore
     healthCheckPath: /actuator/health
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_HOST
         fromDatabase:
           name: placement-coach-db
-          property: connectionString
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: placement-coach-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: placement-coach-db
+          property: database
       - key: DATABASE_USERNAME
         fromDatabase:
           name: placement-coach-db
