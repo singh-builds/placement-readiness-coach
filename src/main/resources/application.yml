@@ -6,6 +6,11 @@ spring:
     url: jdbc:${DATABASE_URL:postgresql://localhost:5432/placement_coach}
     username: ${DATABASE_USERNAME:placement_user}
     password: ${DATABASE_PASSWORD:placement_password}
+    hikari:
+      # A new Render Postgres instance can take a short time to accept connections.
+      initialization-fail-timeout: 90000
+      connection-timeout: 30000
+      validation-timeout: 5000
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,6 +23,8 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+server:
+  port: ${PORT:8080}
 app:
   jwt:
     # Override APP_JWT_SECRET outside development (minimum 32 bytes).
