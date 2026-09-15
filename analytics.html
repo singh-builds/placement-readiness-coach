@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progress Analytics · Placement Readiness Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="main-col">
+    <div id="topbar"></div>
+
+    <div class="page-content">
+
+      <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+          <div class="panel">
+            <h2 class="h6 mb-3">Readiness score over time</h2>
+            <canvas id="readinessChart" height="110"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="panel h-100">
+            <h2 class="h6 mb-3">Interview rating trend</h2>
+            <canvas id="interviewChart" height="140"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="h6 mb-3">Current skill spread — <span id="roleLine"></span></h2>
+        <canvas id="skillChart" height="90"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const state = renderShell({
+    active: "analytics.html",
+    title: "Progress Analytics",
+    subhead: "How your readiness, interview scores and skills have moved."
+  });
+
+  const role = getRoleById(state.student.targetRoleId);
+  document.getElementById("roleLine").textContent = role.name;
+
+  Chart.defaults.font.family = "Inter, sans-serif";
+  Chart.defaults.color = "#4E5D6C";
+
+  const history = [...state.analyticsHistory].sort((a, b) => a.date.localeCompare(b.date));
+
+  new Chart(document.getElementById("readinessChart"), {
+    type: "line",
+    data: {
+      labels: history.map(h => formatDate(h.date)),
+      datasets: [{
+        label: "Readiness %",
+        data: history.map(h => h.readiness),
+        borderColor: "#E3A008",
+        backgroundColor: "rgba(227,160,8,0.12)",
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+        pointBackgroundColor: "#E3A008"
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { min: 0, max: 100, grid: { color: "#EEF1F4" } }, x: { grid: { display: false } } }
+    }
+  });
+
+  const interviews = [...state.interviews].sort((a, b) => a.date.localeCompare(b.date));
+  new Chart(document.getElementById("interviewChart"), {
+    type: "bar",
+    data: {
+      labels: interviews.map(iv => formatDate(iv.date)),
+      datasets: [{
+        label: "Self-rating (out of 5)",
+        data: interviews.map(iv => iv.rating),
+        backgroundColor: "#12233D",
+        borderRadius: 4,
+        maxBarThickness: 34
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { min: 0, max: 5, grid: { color: "#EEF1F4" } }, x: { grid: { display: false } } }
+    }
+  });
+
+  const diag = state.diagnostics[role.id];
+  new Chart(document.getElementById("skillChart"), {
+    type: "bar",
+    data: {
+      labels: role.skills.map(s => s.name),
+      datasets: [
+        {
+          label: "Current",
+          data: role.skills.map(s => diag?.byTopic[s.name] ?? 0),
+          backgroundColor: "#E3A008",
+          borderRadius: 4
+        },
+        {
+          label: "Target",
+          data: role.skills.map(s => s.target),
+          backgroundColor: "#DFE4E9",
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: "bottom" } },
+      scales: { y: { min: 0, max: 100, grid: { color: "#EEF1F4" } }, x: { grid: { display: false } } }
+    }
+  });
+</script>
+</body>
+</html>

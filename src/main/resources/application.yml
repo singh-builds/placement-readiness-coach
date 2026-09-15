@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: placement-readiness-coach
+  datasource:
+    # DATABASE_URL is PostgreSQL URL without the JDBC prefix, compatible with Render and Docker.
+    url: jdbc:${DATABASE_URL:postgresql://localhost:5432/placement_coach}
+    username: ${DATABASE_USERNAME:placement_user}
+    password: ${DATABASE_PASSWORD:placement_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+app:
+  jwt:
+    # Override APP_JWT_SECRET outside development (minimum 32 bytes).
+    secret: ${APP_JWT_SECRET:change-this-development-key-change-this-development-key}
+    expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:120}

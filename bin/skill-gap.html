@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill-Gap Dashboard · Placement Readiness Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="main-col">
+    <div id="topbar"></div>
+
+    <div class="page-content">
+
+      <div id="noDataNotice" class="panel text-center py-4 mb-3 d-none">
+        <i class="bi bi-info-circle" style="color:var(--accent); font-size:1.4rem;"></i>
+        <p class="mb-2 mt-2">No diagnostic result yet for this role.</p>
+        <a href="diagnostic-test.html" class="btn btn-accent btn-sm">Take the diagnostic test</a>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h2 class="h6 mb-1">Current vs. target proficiency</h2>
+                <p class="text-muted mb-0" style="font-size:0.85rem;" id="roleLine"></p>
+              </div>
+              <span class="pill pill-neutral" id="lastTaken"></span>
+            </div>
+            <div id="skillList"></div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="panel mb-3">
+            <h2 class="h6 mb-2">Readiness summary</h2>
+            <div class="stat-value mb-1" id="overallScore">—</div>
+            <p class="text-muted" style="font-size:0.85rem;">Average across all required skills for this role.</p>
+          </div>
+          <div class="panel">
+            <h2 class="h6 mb-3">Priority gaps</h2>
+            <div id="priorityList"></div>
+            <a href="learning-plan.html" class="btn btn-sm btn-outline-ink mt-2 w-100">Build/update learning plan</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const state = renderShell({
+    active: "skill-gap.html",
+    title: "Skill-Gap Dashboard",
+    subhead: "Where you stand today against what your target role expects."
+  });
+
+  const role = getRoleById(state.student.targetRoleId);
+  const diag = state.diagnostics[role.id];
+
+  document.getElementById("roleLine").textContent = role.name;
+
+  if (!diag) {
+    document.getElementById("noDataNotice").classList.remove("d-none");
+  } else {
+    document.getElementById("lastTaken").textContent = "Last tested " + formatDate(diag.takenAt);
+  }
+
+  const skills = role.skills.map(s => ({
+    ...s,
+    current: diag?.byTopic[s.name] ?? 0,
+    gap: Math.max(0, s.target - (diag?.byTopic[s.name] ?? 0))
+  }));
+
+  document.getElementById("skillList").innerHTML = skills.map(s => `
+    <div class="skill-row">
+      <div class="skill-head">
+        <span class="skill-name">${s.name}</span>
+        <span class="skill-score">${s.current}% / target ${s.target}%</span>
+      </div>
+      <div class="skill-track"><div class="skill-fill ${skillLevelClass(s.current)}" style="width:${s.current}%"></div></div>
+      <div class="mt-1">${pillForGap(s.gap)}</div>
+    </div>
+  `).join("");
+
+  const overall = diag ? diag.score : 0;
+  document.getElementById("overallScore").textContent = overall + "%";
+
+  const priority = skills.filter(s => s.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 4);
+  document.getElementById("priorityList").innerHTML = priority.length ? priority.map(s => `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span style="font-size:0.88rem;">${s.name}</span>
+      ${pillForGap(s.gap)}
+    </div>
+  `).join("") : `<p class="text-muted mb-0" style="font-size:0.88rem;">No gaps above target — great work.</p>`;
+</script>
+</body>
+</html>

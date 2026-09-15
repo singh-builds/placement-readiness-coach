@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Placement Readiness Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="main-col">
+    <div id="topbar"></div>
+
+    <div class="page-content">
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-tile">
+            <div class="stat-value" id="statReadiness">—</div>
+            <div class="stat-label">Overall readiness</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-tile">
+            <div class="stat-value" id="statGaps">—</div>
+            <div class="stat-label">Skills below target</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-tile">
+            <div class="stat-value" id="statPlan">—</div>
+            <div class="stat-label">Learning tasks completed</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-tile">
+            <div class="stat-value" id="statInterviews">—</div>
+            <div class="stat-label">Mock interviews logged</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="panel h-100">
+            <h2 class="h6 mb-1">Top skill gaps for your target role</h2>
+            <div class="section-label" id="targetRoleLabel"></div>
+            <div id="gapPreview"></div>
+            <a href="skill-gap.html" class="btn btn-sm btn-outline-ink mt-2">View full skill-gap dashboard</a>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="panel h-100">
+            <h2 class="h6 mb-3">Next up in your learning plan</h2>
+            <div id="planPreview"></div>
+            <a href="learning-plan.html" class="btn btn-sm btn-outline-ink mt-2">Open learning plan</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-lg-7">
+          <div class="panel h-100">
+            <h2 class="h6 mb-3">Recent mock interview notes</h2>
+            <div id="interviewPreview"></div>
+            <a href="mock-interview.html" class="btn btn-sm btn-outline-ink mt-2">See full interview log</a>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="panel h-100">
+            <h2 class="h6 mb-3">Quick actions</h2>
+            <div class="d-grid gap-2">
+              <a href="diagnostic-test.html" class="btn btn-accent"><i class="bi bi-pencil-square"></i>&nbsp; Take a diagnostic test</a>
+              <a href="role-profiles.html" class="btn btn-outline-ink"><i class="bi bi-person-badge"></i>&nbsp; Change target role</a>
+              <a href="analytics.html" class="btn btn-outline-ink"><i class="bi bi-activity"></i>&nbsp; View progress over time</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const firstName = loadState().student.name.split(" ")[0];
+  const state = renderShell({
+    active: "index.html",
+    title: "Welcome back, " + firstName,
+    subhead: "Here's where your placement preparation stands today."
+  });
+
+  const role = getRoleById(state.student.targetRoleId);
+  const diag = state.diagnostics[role.id];
+  const plan = state.learningPlan[role.id] || [];
+
+  document.getElementById("statReadiness").textContent = (diag ? diag.score : 0) + "%";
+  document.getElementById("statGaps").textContent = role.skills.filter(s => (diag?.byTopic[s.name] ?? 0) < s.target).length;
+  document.getElementById("statPlan").textContent = plan.filter(t => t.done).length + " / " + plan.length;
+  document.getElementById("statInterviews").textContent = state.interviews.length;
+
+  document.getElementById("targetRoleLabel").textContent = role.name;
+
+  const gapPreview = document.getElementById("gapPreview");
+  const ranked = role.skills
+    .map(s => ({ ...s, current: diag?.byTopic[s.name] ?? 0, gap: s.target - (diag?.byTopic[s.name] ?? 0) }))
+    .sort((a, b) => b.gap - a.gap)
+    .slice(0, 3);
+
+  gapPreview.innerHTML = ranked.map(s => `
+    <div class="skill-row">
+      <div class="skill-head">
+        <span class="skill-name">${s.name}</span>
+        <span class="skill-score">${s.current}% of ${s.target}% target</span>
+      </div>
+      <div class="skill-track"><div class="skill-fill ${skillLevelClass(s.current)}" style="width:${s.current}%"></div></div>
+    </div>
+  `).join("");
+
+  const planPreview = document.getElementById("planPreview");
+  const pending = plan.filter(t => !t.done).slice(0, 3);
+  planPreview.innerHTML = pending.length ? pending.map(t => `
+    <div class="d-flex align-items-start gap-2 mb-2">
+      <i class="bi bi-circle mt-1" style="color:var(--slate-light)"></i>
+      <div>
+        <div style="font-weight:600; font-size:0.9rem;">${t.task}</div>
+        <div class="text-muted" style="font-size:0.78rem;">${t.topic}</div>
+      </div>
+    </div>
+  `).join("") : `<p class="text-muted mb-0">All caught up — nice work.</p>`;
+
+  const interviewPreview = document.getElementById("interviewPreview");
+  interviewPreview.innerHTML = state.interviews.slice(-2).reverse().map(iv => `
+    <div class="panel log-card mb-2" style="padding:0.85rem 1rem;">
+      <div class="d-flex justify-content-between">
+        <strong style="font-size:0.9rem;">${iv.role}</strong>
+        <span class="text-muted" style="font-size:0.78rem;">${formatDate(iv.date)}</span>
+      </div>
+      <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;">${iv.notes}</div>
+    </div>
+  `).join("");
+</script>
+</body>
+</html>
